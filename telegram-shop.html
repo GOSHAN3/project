@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NNSTORE</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#111110; --surface:#1C1C1A; --surface2:#242422;
+  --text:#F0EDE8; --muted:#6B6964; --accent:#F0EDE8;
+  --soft:#2A2A27; --border:rgba(240,237,232,0.1);
+  --red:#E05A48; --green:#3D9E68; --r:14px; --nav:62px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);overscroll-behavior:none;-webkit-font-smoothing:antialiased}
+
+/* ── NAV ── */
+nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav);background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;border:none;background:none;padding:6px 0;transition:.15s}
+.nb svg{width:22px;height:22px;stroke:var(--muted);stroke-width:1.5;fill:none;transition:.15s}
+.nb span{font-size:10px;color:var(--muted);letter-spacing:.02em;transition:.15s}
+.nb.active svg{stroke:var(--text)}
+.nb.active span{color:var(--text);font-weight:500}
+
+/* ── PAGES ── */
+.page{display:none;height:calc(100dvh - var(--nav));overflow-y:auto;overflow-x:hidden;padding-bottom:12px;-webkit-overflow-scrolling:touch}
+.page.active{display:block}
+.pad{padding:0 16px}
+
+/* ── TOP BAR ── */
+.topbar{padding:20px 16px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:10}
+.logo{font-family:'DM Serif Display',serif;font-size:26px;letter-spacing:-.03em}
+.cart-btn{position:relative;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--surface);border-radius:12px}
+.cart-btn svg{width:20px;height:20px;stroke:var(--text);stroke-width:1.5;fill:none}
+.cbadge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;background:var(--red);border-radius:9px;font-size:10px;color:#fff;display:none;align-items:center;justify-content:center;font-weight:600;padding:0 4px;border:2px solid var(--bg)}
+.cbadge.show{display:flex}
+
+/* ── SEARCH ── */
+.search{margin:0 16px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);display:flex;align-items:center;gap:8px;padding:11px 14px}
+.search svg{width:16px;height:16px;stroke:var(--muted);stroke-width:1.5;fill:none;flex-shrink:0}
+.search input{border:none;outline:none;background:none;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);width:100%}
+.search input::placeholder{color:var(--muted)}
+
+/* ── CHIPS ── */
+.chips{display:flex;gap:8px;padding:0 16px 18px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;padding:7px 16px;border-radius:100px;border:1px solid var(--border);font-size:13px;cursor:pointer;white-space:nowrap;transition:.15s;background:var(--surface);color:var(--text)}
+.chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+
+/* ── BANNER ── */
+.banner{margin:0 16px 20px;background:linear-gradient(135deg,#1e1e1c 0%,#2a2a27 100%);border:1px solid var(--border);border-radius:var(--r);padding:20px;display:flex;align-items:center;justify-content:space-between;overflow:hidden;position:relative}
+.bn-tag{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.bn-title{font-family:'DM Serif Display',serif;font-size:24px;line-height:1.1;margin-bottom:6px}
+.bn-sub{font-size:12px;color:var(--muted)}
+.bn-btn{flex-shrink:0;margin-left:16px;background:var(--text);color:var(--bg);border:none;border-radius:10px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+.bn-deco{position:absolute;right:-10px;bottom:-20px;font-size:90px;opacity:.12;pointer-events:none;user-select:none}
+
+/* ── SECTION LABEL ── */
+.slabel{font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+
+/* ── PRODUCT GRID ── */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pcard{background:var(--surface);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:transform .15s;position:relative;border:1px solid var(--border)}
+.pcard:active{transform:scale(.97)}
+.pimg{aspect-ratio:3/4;background:var(--soft);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.pimg img{width:100%;height:100%;object-fit:cover}
+.pimg-em{font-size:56px}
+.pbadge{position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600;letter-spacing:.04em}
+.b-new{background:var(--text);color:var(--bg)}
+.b-sale{background:var(--red);color:#fff}
+.pinfo{padding:10px 12px 12px}
+.pname{font-size:13px;font-weight:500;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prow{display:flex;align-items:center;justify-content:space-between}
+.pprice{font-size:15px;font-weight:500}
+.pold{font-size:11px;color:var(--muted);text-decoration:line-through;display:block;margin-top:1px}
+.addbtn{width:30px;height:30px;border-radius:9px;background:var(--text);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.addbtn svg{width:14px;height:14px;stroke:var(--bg);stroke-width:2.5;fill:none}
+
+/* ── CART ── */
+.cempty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:55vh;gap:12px;color:var(--muted)}
+.cempty-icon{font-size:52px}
+.citem{background:var(--surface);border-radius:var(--r);padding:14px;display:flex;gap:12px;margin-bottom:10px;border:1px solid var(--border)}
+.cithumb{width:64px;height:80px;background:var(--soft);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;overflow:hidden}
+.cithumb img{width:100%;height:100%;object-fit:cover}
+.ciinfo{flex:1;min-width:0}
+.ciname{font-size:14px;font-weight:500;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cisize{font-size:12px;color:var(--muted);margin-bottom:8px}
+.cibot{display:flex;align-items:center;justify-content:space-between}
+.ciprice{font-size:15px;font-weight:500}
+.qty{display:flex;align-items:center;gap:10px}
+.qtybtn{width:28px;height:28px;border-radius:8px;background:var(--soft);border:none;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;color:var(--text)}
+.qtynum{font-size:14px;font-weight:500;min-width:18px;text-align:center}
+.csum{background:var(--surface);border-radius:var(--r);padding:16px;margin-top:4px;border:1px solid var(--border)}
+.srow{display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px;color:var(--muted)}
+.srow span:last-child{color:var(--text);font-weight:500}
+.srow.tot{color:var(--text);font-size:16px;font-weight:500;border-top:1px solid var(--border);padding-top:12px;margin-top:4px;margin-bottom:0}
+.cobtn{width:100%;background:var(--text);color:var(--bg);border:none;border-radius:var(--r);padding:15px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;margin-top:12px}
+.cobtn:active{opacity:.85}
+
+/* ── PROFILE ── */
+.prof-hero{padding:24px 16px 20px;display:flex;align-items:center;gap:16px}
+.prof-av{width:68px;height:68px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:26px;flex-shrink:0;overflow:hidden;border:2px solid var(--border)}
+.prof-av img{width:100%;height:100%;object-fit:cover}
+.prof-name{font-size:19px;font-weight:500;letter-spacing:-.01em}
+.prof-handle{font-size:13px;color:var(--muted);margin-top:3px}
+.prof-id{font-size:11px;color:var(--muted);margin-top:2px;font-family:monospace}
+.pstats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 16px 20px}
+.pstat{background:var(--surface);border-radius:var(--r);padding:14px 10px;text-align:center;border:1px solid var(--border)}
+.pstat-n{font-size:22px;font-weight:500;font-family:'DM Serif Display',serif}
+.pstat-l{font-size:11px;color:var(--muted);margin-top:3px}
+.msec{padding:0 16px;margin-bottom:10px}
+.mlabel{font-size:10px;font-weight:500;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;padding-left:2px}
+.mi{background:var(--surface);display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;transition:background .1s;border-radius:var(--r);margin-bottom:2px;border:1px solid var(--border)}
+.mi:active{background:var(--soft)}
+.mico{width:36px;height:36px;border-radius:10px;background:var(--soft);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mico svg{width:18px;height:18px;stroke:var(--text);stroke-width:1.5;fill:none}
+.mico.red{background:#3A1E1A}.mico.red svg{stroke:var(--red)}
+.mico.grn{background:#1A3328}.mico.grn svg{stroke:var(--green)}
+.mtxt{flex:1;min-width:0}
+.mtitle{font-size:14px}
+.mhint{font-size:12px;color:var(--muted);margin-top:2px}
+.marr svg{width:16px;height:16px;stroke:var(--muted);stroke-width:1.5;fill:none}
+.mbadge{background:var(--text);color:var(--bg);font-size:11px;padding:2px 8px;border-radius:100px;font-weight:600;white-space:nowrap}
+.mbadge.grn{background:var(--green);color:#fff}
+.mbadge.on{background:var(--text);color:var(--bg)}
+
+/* ── ORDERS ── */
+.ocard{background:var(--surface);border-radius:var(--r);padding:14px;margin-bottom:10px;border:1px solid var(--border)}
+.ohdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.onum{font-size:13px;font-weight:500}
+.odate{font-size:12px;color:var(--muted)}
+.ostatus{font-size:12px;padding:3px 10px;border-radius:6px;font-weight:500}
+.s-ok{background:#1A3328;color:var(--green)}
+.s-ship{background:#332A10;color:#D4A030}
+.s-proc{background:var(--soft);color:var(--muted)}
+.othumbs{display:flex;gap:6px;margin-bottom:10px}
+.othumb{width:50px;height:60px;background:var(--soft);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.oftr{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:10px}
+.ototal{font-size:14px;font-weight:500}
+.rebtn{font-size:13px;color:var(--text);font-weight:500;cursor:pointer;border:1px solid var(--border);background:none;padding:6px 14px;border-radius:8px;font-family:'DM Sans',sans-serif}
+
+/* ── FAVORITES ── */
+.fav-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:55vh;gap:12px;color:var(--muted)}
+
+/* ── MODAL ── */
+.moverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;align-items:flex-end}
+.moverlay.open{display:flex}
+.msheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;padding:16px 16px 32px;animation:sup .25s ease;max-height:90dvh;overflow-y:auto}
+@keyframes sup{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.mhandle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+.mpimg{width:100%;aspect-ratio:4/3;background:var(--soft);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:90px;margin-bottom:16px;overflow:hidden}
+.mpimg img{width:100%;height:100%;object-fit:cover}
+.mpname{font-size:18px;font-weight:500;margin-bottom:4px}
+.mpprice{font-size:24px;font-weight:500;font-family:'DM Serif Display',serif;margin-bottom:16px}
+.slbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.sizes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.szpill{padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;transition:.15s;background:var(--surface)}
+.szpill.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.mpbtn{width:100%;background:var(--text);color:var(--bg);border:none;border-radius:var(--r);padding:15px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(var(--nav) + 14px);left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface);color:var(--text);border:1px solid var(--border);padding:10px 20px;border-radius:100px;font-size:13px;font-weight:500;z-index:400;opacity:0;transition:all .25s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- ═══ SHOP PAGE ═══ -->
+<div class="page active" id="pg-shop">
+  <div class="topbar">
+    <div class="logo">NNSTORE</div>
+    <div class="cart-btn" onclick="goPage('cart')">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <div class="cbadge" id="cbadge">0</div>
+    </div>
+  </div>
+  <div class="search">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" placeholder="Поиск одежды..." oninput="searchProducts(this.value)">
+  </div>
+  <div class="chips" id="chips">
+    <div class="chip on" onclick="filterCat(this,'all')">Все</div>
+    <div class="chip" onclick="filterCat(this,'tshirt')">Футболки</div>
+    <div class="chip" onclick="filterCat(this,'pants')">Брюки</div>
+    <div class="chip" onclick="filterCat(this,'jacket')">Куртки</div>
+    <div class="chip" onclick="filterCat(this,'shoes')">Обувь</div>
+    <div class="chip" onclick="filterCat(this,'acc')">Аксессуары</div>
+  </div>
+  <div class="banner">
+    <div>
+      <div class="bn-tag">Летняя коллекция</div>
+      <div class="bn-title">Новые<br>Arrivals</div>
+      <div class="bn-sub">Скидки до 40%</div>
+    </div>
+    <button class="bn-btn" onclick="filterCat(document.querySelector('.chip'),'all')">Смотреть</button>
+    <div class="bn-deco">☀️</div>
+  </div>
+  <div class="pad">
+    <div class="slabel" style="margin-bottom:14px">Популярное</div>
+    <div class="pgrid" id="pgrid"></div>
+  </div>
+</div>
+
+<!-- ═══ FAVORITES PAGE ═══ -->
+<div class="page" id="pg-favorites">
+  <div class="topbar"><div class="logo" style="font-family:'DM Serif Display',serif;font-size:24px">Избранное</div></div>
+  <div class="pad">
+    <div class="pgrid" id="fav-grid">
+      <div style="grid-column:1/-1">
+        <div class="fav-empty"><div style="font-size:48px">🤍</div><div style="font-size:14px">Пока ничего не сохранено</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CART PAGE ═══ -->
+<div class="page" id="pg-cart">
+  <div class="topbar">
+    <div class="logo" style="font-family:'DM Serif Display',serif;font-size:24px">Корзина</div>
+    <span style="font-size:13px;color:var(--muted)" id="clabel">0 товаров</span>
+  </div>
+  <div class="pad" id="cartcontent">
+    <div class="cempty"><div class="cempty-icon">🛍️</div><div style="font-size:14px">Корзина пуста</div></div>
+  </div>
+</div>
+
+<!-- ═══ PROFILE PAGE ═══ -->
+<div class="page" id="pg-profile">
+  <div class="prof-hero">
+    <div class="prof-av" id="prof-av">?</div>
+    <div>
+      <div class="prof-name" id="prof-name">Загрузка...</div>
+      <div class="prof-handle" id="prof-handle"></div>
+      <div class="prof-id" id="prof-id"></div>
+    </div>
+  </div>
+  <div class="pstats">
+    <div class="pstat"><div class="pstat-n">12</div><div class="pstat-l">Заказов</div></div>
+    <div class="pstat"><div class="pstat-n" id="fav-count">0</div><div class="pstat-l">Избранное</div></div>
+    <div class="pstat"><div class="pstat-n">3</div><div class="pstat-l">Отзывов</div></div>
+  </div>
+
+  <div class="msec">
+    <div class="mlabel">Покупки</div>
+    <div class="mi" onclick="showOrders()">
+      <div class="mico"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg></div>
+      <div class="mtxt"><div class="mtitle">Мои заказы</div><div class="mhint">История покупок</div></div>
+      <span class="mbadge grn">12</span>
+    </div>
+    <div class="mi" onclick="goPage('favorites')">
+      <div class="mico"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+      <div class="mtxt"><div class="mtitle">Избранное</div><div class="mhint">Сохранённые товары</div></div>
+      <div class="marr"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+    </div>
+    <div class="mi">
+      <div class="mico"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+      <div class="mtxt"><div class="mtitle">Адреса доставки</div><div class="mhint">Управление адресами</div></div>
+      <div class="marr"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+    </div>
+  </div>
+
+  <div class="msec">
+    <div class="mlabel">Поддержка</div>
+    <div class="mi" onclick="openSupport()">
+      <div class="mico grn"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+      <div class="mtxt"><div class="mtitle">Написать в поддержку</div><div class="mhint">Ответим за 5 минут</div></div>
+      <span class="mbadge" style="background:var(--green);color:#fff">Онлайн</span>
+    </div>
+    <div class="mi">
+      <div class="mico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div class="mtxt"><div class="mtitle">FAQ</div><div class="mhint">Частые вопросы</div></div>
+      <div class="marr"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+    </div>
+    <div class="mi">
+      <div class="mico"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg></div>
+      <div class="mtxt"><div class="mtitle">Возврат товара</div><div class="mhint">Оформить возврат</div></div>
+      <div class="marr"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+    </div>
+  </div>
+
+  <div class="msec">
+    <div class="mlabel">Внешний вид</div>
+    <div class="mi" onclick="toggleTheme()">
+      <div class="mico" id="theme-ico"><svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></div>
+      <div class="mtxt"><div class="mtitle" id="theme-title">Светлая тема</div><div class="mhint" id="theme-hint">Сейчас: тёмная</div></div>
+      <div style="position:relative;width:44px;height:26px;flex-shrink:0">
+        <div id="ttrack" style="width:44px;height:26px;border-radius:13px;background:var(--soft);border:1px solid var(--border);transition:.25s"></div>
+        <div id="tthumb" style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:all .25s"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="msec">
+    <div class="mlabel">Аккаунт</div>
+    <div class="mi">
+      <div class="mico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="mtxt"><div class="mtitle">Личные данные</div><div class="mhint">Имя, телефон, email</div></div>
+      <div class="marr"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+    </div>
+    <div class="mi">
+      <div class="mico"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
+      <div class="mtxt"><div class="mtitle">Уведомления</div><div class="mhint">Настройка оповещений</div></div>
+      <div class="marr"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+    </div>
+    <div class="mi" onclick="showToast('До свидания! 👋')">
+      <div class="mico red"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+      <div class="mtxt"><div class="mtitle" style="color:var(--red)">Выйти</div></div>
+    </div>
+  </div>
+  <div style="height:8px"></div>
+</div>
+
+<!-- ═══ ORDERS MODAL ═══ -->
+<div class="moverlay" id="mod-orders" onclick="closeMod('mod-orders')">
+  <div class="msheet" onclick="event.stopPropagation()">
+    <div class="mhandle"></div>
+    <div style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:16px">Мои заказы</div>
+    <div id="orders-list"></div>
+  </div>
+</div>
+
+<!-- ═══ PRODUCT MODAL ═══ -->
+<div class="moverlay" id="mod-product" onclick="closeMod('mod-product')">
+  <div class="msheet" onclick="event.stopPropagation()">
+    <div class="mhandle"></div>
+    <div class="mpimg" id="mpimg"></div>
+    <div class="mpname" id="mpname"></div>
+    <div class="mpprice" id="mpprice"></div>
+    <div class="slbl">Размер</div>
+    <div class="sizes">
+      <div class="szpill" onclick="selSz(this)">XS</div>
+      <div class="szpill on" onclick="selSz(this)">S</div>
+      <div class="szpill" onclick="selSz(this)">M</div>
+      <div class="szpill" onclick="selSz(this)">L</div>
+      <div class="szpill" onclick="selSz(this)">XL</div>
+    </div>
+    <button class="mpbtn" onclick="addFromMod()">Добавить в корзину</button>
+  </div>
+</div>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <button class="nb active" id="nav-shop" onclick="goPage('shop')">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+    <span>Главная</span>
+  </button>
+  <button class="nb" id="nav-favorites" onclick="goPage('favorites')">
+    <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+    <span>Избранное</span>
+  </button>
+  <button class="nb" id="nav-cart" onclick="goPage('cart')">
+    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    <span>Корзина</span>
+  </button>
+  <button class="nb" id="nav-profile" onclick="goPage('profile')">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Профиль</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if(tg){ tg.ready(); tg.expand(); tg.setHeaderColor?.('#111110'); }
+
+// ── PRODUCTS DATA ──
+const PRODUCTS = [
+  {id:1,name:'Linen Tee',price:2490,emoji:'👕',cat:'tshirt',badge:'new'},
+  {id:2,name:'Wide Pants',price:4990,old:6990,emoji:'👖',cat:'pants',badge:'sale'},
+  {id:3,name:'Bomber',price:8990,emoji:'🧥',cat:'jacket',badge:'new'},
+  {id:4,name:'White Sneakers',price:6490,emoji:'👟',cat:'shoes'},
+  {id:5,name:'Linen Shirt',price:3490,emoji:'👔',cat:'tshirt'},
+  {id:6,name:'Cap',price:1990,old:2490,emoji:'🧢',cat:'acc',badge:'sale'},
+  {id:7,name:'Cargo Pants',price:5990,emoji:'🩳',cat:'pants'},
+  {id:8,name:'Parka',price:11990,emoji:'🥼',cat:'jacket',badge:'new'},
+];
+
+const ORDERS = [
+  {num:'#4021',date:'12 мая',status:'s-ok',sl:'Доставлен',items:['👕','👖'],total:'7 480 ₽'},
+  {num:'#3998',date:'3 мая',status:'s-ship',sl:'В пути',items:['🧥'],total:'8 990 ₽'},
+  {num:'#3812',date:'18 апр',status:'s-ok',sl:'Доставлен',items:['👟','🧢','👔'],total:'11 970 ₽'},
+];
+
+let cart = {}, favs = new Set(), curProd = null, curCat = 'all', curSearch = '';
+
+// ── TELEGRAM USER ──
+function initProfile() {
+  const user = tg?.initDataUnsafe?.user;
+  const avEl = document.getElementById('prof-av');
+  const nameEl = document.getElementById('prof-name');
+  const handleEl = document.getElementById('prof-handle');
+  const idEl = document.getElementById('prof-id');
+
+  if (user) {
+    const full = [user.first_name, user.last_name].filter(Boolean).join(' ');
+    nameEl.textContent = full || 'Пользователь';
+    handleEl.textContent = user.username ? '@' + user.username : '';
+    idEl.textContent = 'ID: ' + user.id;
+
+    // Аватарка: Telegram не даёт прямую ссылку на фото из WebApp.
+    // Показываем инициалы — красиво и надёжно.
+    const initials = [user.first_name?.[0], user.last_name?.[0]].filter(Boolean).join('').toUpperCase() || '?';
+    avEl.textContent = initials;
+
+    // Если фото доступно через photo_url (некоторые клиенты передают)
+    if (user.photo_url) {
+      const img = new Image();
+      img.onload = () => { avEl.innerHTML = ''; avEl.appendChild(img); img.style.cssText='width:100%;height:100%;object-fit:cover'; };
+      img.src = user.photo_url;
+    }
+  } else {
+    // Превью вне Telegram
+    nameEl.textContent = 'Гость';
+    handleEl.textContent = 'Откройте в Telegram';
+    idEl.textContent = 'ID: —';
+    avEl.textContent = 'G';
+  }
+}
+
+// ── RENDER PRODUCTS ──
+function renderProducts() {
+  const grid = document.getElementById('pgrid');
+  let list = PRODUCTS;
+  if (curCat !== 'all') list = list.filter(p => p.cat === curCat);
+  if (curSearch) list = list.filter(p => p.name.toLowerCase().includes(curSearch.toLowerCase()));
+  if (!list.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--muted);font-size:14px">Ничего не найдено</div>'; return; }
+  grid.innerHTML = list.map(p => cardHTML(p, false)).join('');
+}
+
+function cardHTML(p, inFav) {
+  const imgHtml = p.img
+    ? `<img src="${p.img}" alt="${p.name}">`
+    : `<span class="pimg-em">${p.emoji}</span>`;
+  const badgeHtml = p.badge ? `<span class="pbadge b-${p.badge}">${p.badge==='new'?'NEW':'SALE'}</span>` : '';
+  const oldHtml = p.old ? `<span class="pold">${p.old.toLocaleString('ru')} ₽</span>` : '';
+  return `<div class="pcard" onclick="openProd(${p.id})">
+    <div class="pimg">${imgHtml}${badgeHtml}</div>
+    <div class="pinfo">
+      <div class="pname">${p.name}</div>
+      <div class="prow">
+        <div><span class="pprice">${p.price.toLocaleString('ru')} ₽</span>${oldHtml}</div>
+        <button class="addbtn" onclick="event.stopPropagation();quickAdd(${p.id})">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function filterCat(el, cat) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  curCat = cat;
+  renderProducts();
+}
+
+function searchProducts(q) {
+  curSearch = q;
+  renderProducts();
+}
+
+// ── PRODUCT MODAL ──
+function openProd(id) {
+  curProd = PRODUCTS.find(p => p.id === id);
+  const img = document.getElementById('mpimg');
+  img.innerHTML = curProd.img ? `<img src="${curProd.img}" style="width:100%;height:100%;object-fit:cover">` : curProd.emoji;
+  document.getElementById('mpname').textContent = curProd.name;
+  document.getElementById('mpprice').textContent = curProd.price.toLocaleString('ru') + ' ₽';
+  document.querySelectorAll('.szpill').forEach((p,i) => p.classList.toggle('on', i===1));
+  document.getElementById('mod-product').classList.add('open');
+}
+
+function selSz(el) {
+  document.querySelectorAll('.szpill').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function addFromMod() {
+  if (!curProd) return;
+  const sz = document.querySelector('.szpill.on')?.textContent || 'M';
+  addToCart(curProd, sz);
+  closeMod('mod-product');
+  showToast(curProd.name + ' добавлен в корзину');
+}
+
+function quickAdd(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  addToCart(p, 'M');
+  showToast(p.name + ' добавлен');
+}
+
+// ── CART ──
+function addToCart(p, sz) {
+  const k = p.id + '_' + sz;
+  if (!cart[k]) cart[k] = {...p, sz, qty: 0};
+  cart[k].qty++;
+  updateCart();
+}
+
+function updateCart() {
+  const items = Object.values(cart).filter(i => i.qty > 0);
+  const total = items.reduce((s,i) => s + i.qty, 0);
+  const badge = document.getElementById('cbadge');
+  badge.textContent = total;
+  badge.classList.toggle('show', total > 0);
+  const lbl = total === 1 ? 'товар' : total < 5 ? 'товара' : 'товаров';
+  document.getElementById('clabel').textContent = total + ' ' + lbl;
+  renderCart();
+}
+
+function renderCart() {
+  const items = Object.values(cart).filter(i => i.qty > 0);
+  const el = document.getElementById('cartcontent');
+  if (!items.length) {
+    el.innerHTML = '<div class="cempty"><div class="cempty-icon">🛍️</div><div style="font-size:14px">Корзина пуста</div></div>';
+    return;
+  }
+  const sub = items.reduce((s,i) => s + i.qty * i.price, 0);
+  const del = sub > 5000 ? 0 : 390;
+  el.innerHTML = items.map(i => {
+    const th = i.img ? `<img src="${i.img}" style="width:100%;height:100%;object-fit:cover">` : i.emoji;
+    return `<div class="citem">
+      <div class="cithumb">${th}</div>
+      <div class="ciinfo">
+        <div class="ciname">${i.name}</div>
+        <div class="cisize">Размер: ${i.sz}</div>
+        <div class="cibot">
+          <div class="ciprice">${(i.price*i.qty).toLocaleString('ru')} ₽</div>
+          <div class="qty">
+            <button class="qtybtn" onclick="chgQty('${i.id}_${i.sz}',-1)">−</button>
+            <span class="qtynum">${i.qty}</span>
+            <button class="qtybtn" onclick="chgQty('${i.id}_${i.sz}',1)">+</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('') + `
+  <div class="csum">
+    <div class="srow"><span>Товары</span><span>${sub.toLocaleString('ru')} ₽</span></div>
+    <div class="srow"><span>Доставка</span><span>${del===0?'Бесплатно':del+' ₽'}</span></div>
+    <div class="srow tot"><span>Итого</span><span>${(sub+del).toLocaleString('ru')} ₽</span></div>
+    <button class="cobtn" onclick="checkout()">Оформить заказ</button>
+  </div>`;
+}
+
+function chgQty(k, d) {
+  if (!cart[k]) return;
+  cart[k].qty = Math.max(0, cart[k].qty + d);
+  if (!cart[k].qty) delete cart[k];
+  updateCart();
+}
+
+// ── CHECKOUT ──
+async function checkout() {
+  const items = Object.values(cart).filter(i => i.qty > 0);
+  if (!items.length) return;
+
+  const BOT = '8783279816:AAGAkXhP51Ev1ht96O2knXwYHLYdiB-jZUo';
+  const MANAGER = '8277601735';
+
+  const user = tg?.initDataUnsafe?.user;
+  const uname = user ? `${user.first_name||''} ${user.last_name||''}`.trim() + (user.username ? ' (@'+user.username+')' : '') : 'Гость';
+  const uid = user?.id || '—';
+
+  const sub = items.reduce((s,i) => s + i.qty * i.price, 0);
+  const del = sub > 5000 ? 0 : 390;
+  const num = '#' + Math.floor(1000 + Math.random()*9000);
+  const lines = items.map(i => `  ${i.emoji} ${i.name} (${i.sz}) × ${i.qty} — ${(i.price*i.qty).toLocaleString('ru')} ₽`).join('\n');
+
+  const text = `🛍 <b>Новый заказ ${num}</b>\n\n👤 ${uname}\n🆔 ID: ${uid}\n\n📦 Товары:\n${lines}\n\n📬 Доставка: ${del===0?'Бесплатно':del+' ₽'}\n💰 <b>Итого: ${(sub+del).toLocaleString('ru')} ₽</b>`;
+
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT}/sendMessage`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({chat_id: MANAGER, text, parse_mode:'HTML'})
+    });
+    if(tg) tg.showPopup({title:'✅ Заказ оформлен!',message:`${num} принят. Менеджер свяжется с вами.`,buttons:[{type:'ok'}]});
+    else showToast('Заказ ' + num + ' оформлен! 🎉');
+    cart = {}; updateCart();
+  } catch(e) { showToast('Ошибка. Попробуйте ещё раз.'); }
+}
+
+// ── ORDERS ──
+function showOrders() {
+  document.getElementById('orders-list').innerHTML = ORDERS.map(o => `
+    <div class="ocard">
+      <div class="ohdr"><span class="onum">${o.num}</span><span class="odate">${o.date}</span><span class="ostatus ${o.status}">${o.sl}</span></div>
+      <div class="othumbs">${o.items.map(e=>`<div class="othumb">${e}</div>`).join('')}</div>
+      <div class="oftr"><span class="ototal">${o.total}</span><button class="rebtn" onclick="showToast('Товары добавлены в корзину')">Повторить</button></div>
+    </div>`).join('');
+  document.getElementById('mod-orders').classList.add('open');
+}
+
+function openSupport() {
+  if(tg) tg.openTelegramLink('https://t.me/nnmanagerr');
+  else showToast('Открываем чат поддержки...');
+}
+
+// ── MODALS ──
+function closeMod(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── NAVIGATION ──
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
+  document.getElementById('pg-'+name).classList.add('active');
+  const nb = document.getElementById('nav-'+name);
+  if(nb) nb.classList.add('active');
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2300);
+}
+
+// ── THEME ──
+let isDark = true;
+const LT = {'--bg':'#F5F4F0','--surface':'#FFFFFF','--surface2':'#F0EEE9','--text':'#1A1A18','--muted':'#8A8880','--accent':'#1A1A18','--soft':'#EDECEA','--border':'rgba(26,26,24,0.1)','--red':'#D94F3D','--green':'#2D7A4F'};
+const DT = {'--bg':'#111110','--surface':'#1C1C1A','--surface2':'#242422','--text':'#F0EDE8','--muted':'#6B6964','--accent':'#F0EDE8','--soft':'#2A2A27','--border':'rgba(240,237,232,0.1)','--red':'#E05A48','--green':'#3D9E68'};
+
+function applyTheme(dark) {
+  const vars = dark ? DT : LT;
+  Object.entries(vars).forEach(([k,v]) => document.documentElement.style.setProperty(k,v));
+  document.querySelectorAll('.mico.red').forEach(el=>el.style.background=dark?'#3A1E1A':'#FDECEA');
+  document.querySelectorAll('.mico.grn').forEach(el=>el.style.background=dark?'#1A3328':'#E6F5EE');
+  const th = document.getElementById('tthumb'), tr = document.getElementById('ttrack');
+  const ti = document.getElementById('theme-ico'), tt = document.getElementById('theme-title'), th2 = document.getElementById('theme-hint');
+  if(th) th.style.transform = dark?'translateX(0)':'translateX(18px)';
+  if(th) th.style.background = dark?'var(--muted)':'#fff';
+  if(tr) tr.style.background = dark?'var(--soft)':'#1A1A18';
+  if(tt) tt.textContent = dark?'Светлая тема':'Тёмная тема';
+  if(th2) th2.textContent = dark?'Сейчас: тёмная':'Сейчас: светлая';
+  if(ti) ti.innerHTML = dark
+    ? '<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text);stroke-width:1.5;fill:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+    : '<svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--text);stroke-width:1.5;fill:none"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>';
+  if(tg) tg.setHeaderColor?.(dark?'#111110':'#F5F4F0');
+}
+
+function toggleTheme() {
+  isDark = !isDark; applyTheme(isDark);
+  try { localStorage.setItem('nnstore-theme', isDark?'dark':'light'); } catch(e){}
+}
+
+// ── INIT ──
+(function(){
+  try { if(localStorage.getItem('nnstore-theme')==='light') isDark=false; } catch(e){}
+  applyTheme(isDark);
+  initProfile();
+  renderProducts();
+  updateCart();
+})();
+</script>
+</body>
+</html>
