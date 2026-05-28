@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NNSTORE</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<!-- Cinzel = Chrome Hearts vibes: Roman-cut serif with gothic edge, very legible -->
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#080808;
+  --surface:#0f0f0f;
+  --surface2:#161616;
+  --text:#e8e0d0;
+  --muted:#5a5550;
+  --accent:#c8a96e;
+  --accent2:#8b1a1a;
+  --soft:#1a1a1a;
+  --border:rgba(200,169,110,0.18);
+  --border2:rgba(200,169,110,0.38);
+  --red:#c84040;
+  --green:#3a7a50;
+  --r:3px;
+  --nav:62px;
+  --cinzel:'Cinzel',serif;
+  --cinzel-dec:'Cinzel Decorative',serif;
+  --fell:'IM Fell English',serif;
+  --body:'Raleway',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);font-family:var(--body);color:var(--text);overscroll-behavior:none;-webkit-font-smoothing:antialiased}
+
+/* ── TEXTURE ── */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");opacity:.5;pointer-events:none;z-index:0}
+
+/* ── NAV ── */
+nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav);background:rgba(8,8,8,0.97);border-top:1px solid var(--border2);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(20px)}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;border:none;background:none;padding:6px 0;transition:.2s;position:relative}
+.nb svg{width:20px;height:20px;stroke:var(--muted);stroke-width:1.5;fill:none;transition:.2s}
+.nb span{font-size:8px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;font-family:var(--cinzel);transition:.2s}
+.nb.active svg{stroke:var(--accent)}
+.nb.active span{color:var(--accent)}
+.nb.active::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:1px;background:var(--accent)}
+
+/* ── PAGES ── */
+.page{display:none;height:calc(100dvh - var(--nav));overflow-y:auto;overflow-x:hidden;padding-bottom:12px;-webkit-overflow-scrolling:touch;position:relative;z-index:1}
+.page.active{display:block}
+.pad{padding:0 16px}
+
+/* ── TOP BAR ── */
+.topbar{padding:16px 16px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(8,8,8,0.96);z-index:10;backdrop-filter:blur(16px);border-bottom:1px solid var(--border)}
+.logo{font-family:var(--cinzel-dec);font-size:20px;letter-spacing:.12em;color:var(--text);line-height:1;filter:drop-shadow(0 0 10px rgba(200,169,110,0.25))}
+.cart-btn{position:relative;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--surface);border:1px solid var(--border2)}
+.cart-btn svg{width:18px;height:18px;stroke:var(--accent);stroke-width:1.5;fill:none}
+.cbadge{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;background:var(--accent2);font-size:9px;color:#fff;display:none;align-items:center;justify-content:center;font-weight:600;padding:0 3px;font-family:var(--cinzel);border:1px solid var(--bg)}
+.cbadge.show{display:flex}
+
+/* ── SECTION LABEL ── */
+.slabel{font-size:9px;font-weight:600;color:var(--accent);letter-spacing:.25em;text-transform:uppercase;margin-bottom:14px;font-family:var(--cinzel);display:flex;align-items:center;gap:10px}
+.slabel::before{content:'✦';font-size:7px;opacity:.7}
+.slabel::after{content:'';flex:1;height:1px;background:linear-gradient(to right,var(--border2),transparent)}
+
+/* ── PRODUCT GRID ── */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pcard{background:var(--surface);overflow:hidden;cursor:pointer;transition:transform .15s;position:relative;border:1px solid var(--border)}
+.pcard:active{transform:scale(.97)}
+.pimg{aspect-ratio:3/4;background:var(--soft);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.pimg img{width:100%;height:100%;object-fit:cover;transition:transform .3s}
+.pcard:active .pimg img{transform:scale(1.04)}
+.pimg-em{font-size:52px;opacity:.4}
+.pbadge{position:absolute;top:8px;left:8px;padding:3px 9px;font-size:8px;font-weight:600;letter-spacing:.15em;font-family:var(--cinzel);z-index:2;text-transform:uppercase}
+.b-new{background:var(--accent);color:var(--bg)}
+.b-sale{background:var(--accent2);color:#fff}
+.pinfo{padding:10px 12px 12px;border-top:1px solid var(--border)}
+.pname{font-size:11px;font-weight:600;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.1em;text-transform:uppercase;font-family:var(--cinzel)}
+.prow{display:flex;align-items:center;justify-content:space-between}
+.pprice{font-size:13px;font-weight:500;font-family:var(--fell);color:var(--accent);font-style:italic}
+.pold{font-size:10px;color:var(--muted);text-decoration:line-through;display:block;margin-top:1px;font-family:var(--body)}
+.addbtn{width:28px;height:28px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.addbtn svg{width:13px;height:13px;stroke:var(--bg);stroke-width:2.5;fill:none}
+
+/* ── PHOTO ALBUM ── */
+.album-wrap{position:relative;aspect-ratio:4/3;background:var(--soft);overflow:hidden;margin-bottom:16px;border:1px solid var(--border2)}
+.album-slide{width:100%;height:100%;display:none;align-items:center;justify-content:center;font-size:80px}
+.album-slide.active{display:flex}
+.album-slide img{width:100%;height:100%;object-fit:cover}
+.album-nav{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5}
+.adot{width:5px;height:5px;background:rgba(200,169,110,.35);cursor:pointer;transition:.2s;border-radius:0}
+.adot.active{background:var(--accent);width:16px}
+.album-arr{position:absolute;top:50%;transform:translateY(-50%);background:rgba(8,8,8,.75);border:1px solid var(--border2);width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5}
+.album-arr svg{width:13px;height:13px;stroke:var(--accent);stroke-width:2;fill:none}
+.album-arr.prev{left:10px}
+.album-arr.next{right:10px}
+
+/* ── CART ── */
+.cempty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:55vh;gap:14px;color:var(--muted)}
+.cempty-icon{font-size:38px;opacity:.2;font-family:var(--cinzel-dec)}
+.cempty-txt{font-size:10px;letter-spacing:.2em;font-family:var(--cinzel);text-transform:uppercase;color:var(--muted)}
+.citem{background:var(--surface);padding:14px;display:flex;gap:12px;margin-bottom:8px;border:1px solid var(--border)}
+.cithumb{width:60px;height:76px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;overflow:hidden;border:1px solid var(--border)}
+.cithumb img{width:100%;height:100%;object-fit:cover}
+.ciinfo{flex:1;min-width:0}
+.ciname{font-size:11px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.08em;text-transform:uppercase;font-family:var(--cinzel)}
+.cisize{font-size:11px;color:var(--muted);margin-bottom:8px;font-family:var(--body)}
+.cibot{display:flex;align-items:center;justify-content:space-between}
+.ciprice{font-size:14px;font-weight:500;font-family:var(--fell);color:var(--accent);font-style:italic}
+.qty{display:flex;align-items:center;gap:8px}
+.qtybtn{width:26px;height:26px;background:var(--soft);border:1px solid var(--border);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--text);font-family:var(--body)}
+.qtynum{font-size:13px;font-weight:500;min-width:18px;text-align:center;font-family:var(--cinzel)}
+.csum{background:var(--surface);padding:16px;margin-top:4px;border:1px solid var(--border2)}
+.srow{display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;color:var(--muted);font-family:var(--body);letter-spacing:.03em}
+.srow span:last-child{color:var(--text);font-weight:500}
+.srow.tot{color:var(--text);font-size:16px;font-weight:400;border-top:1px solid var(--border2);padding-top:12px;margin-top:4px;margin-bottom:0;font-family:var(--fell);font-style:italic}
+.cobtn{width:100%;background:var(--accent);color:var(--bg);border:none;padding:15px;font-family:var(--cinzel);font-size:11px;font-weight:600;cursor:pointer;margin-top:12px;letter-spacing:.2em;text-transform:uppercase;transition:opacity .15s}
+.cobtn:active{opacity:.8}
+.addr-banner{background:var(--soft);border:1px solid var(--border2);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.addr-banner svg{width:16px;height:16px;stroke:var(--accent);stroke-width:1.5;fill:none;flex-shrink:0}
+.addr-banner-txt{flex:1;min-width:0}
+.addr-banner-label{font-size:9px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;font-family:var(--cinzel)}
+.addr-banner-val{font-size:12px;color:var(--text);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--body)}
+.addr-banner-arr svg{width:13px;height:13px;stroke:var(--muted);stroke-width:1.5;fill:none}
+
+/* ── PROFILE ── */
+.prof-hero{padding:24px 16px 20px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--border)}
+.prof-av{width:66px;height:66px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-family:var(--cinzel-dec);font-size:22px;flex-shrink:0;overflow:hidden;border:1px solid var(--border2);color:var(--accent)}
+.prof-av img{width:100%;height:100%;object-fit:cover}
+.prof-name{font-size:18px;font-weight:500;letter-spacing:.04em;font-family:var(--cinzel)}
+.prof-handle{font-size:12px;color:var(--muted);margin-top:3px;font-family:var(--body)}
+.prof-id{font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--body);letter-spacing:.04em}
+.pstats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:16px 16px 18px}
+.pstat{background:var(--surface);padding:14px 10px;text-align:center;border:1px solid var(--border)}
+.pstat-n{font-size:20px;font-weight:400;font-family:var(--fell);color:var(--accent);font-style:italic}
+.pstat-l{font-size:8px;color:var(--muted);margin-top:3px;font-family:var(--cinzel);letter-spacing:.15em;text-transform:uppercase}
+.msec{padding:0 16px;margin-bottom:12px}
+.mlabel{font-size:8px;font-weight:600;color:var(--accent);letter-spacing:.25em;text-transform:uppercase;margin-bottom:8px;padding-left:2px;font-family:var(--cinzel)}
+.mi{background:var(--surface);display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;transition:background .1s;margin-bottom:2px;border:1px solid var(--border)}
+.mi:active{background:var(--soft)}
+.mico{width:34px;height:34px;background:var(--soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--border)}
+.mico svg{width:16px;height:16px;stroke:var(--text);stroke-width:1.5;fill:none}
+.mico.red{background:#2a0e0e;border-color:#5a1a1a}.mico.red svg{stroke:var(--red)}
+.mico.grn{background:#0e2a18;border-color:#1a5a30}.mico.grn svg{stroke:var(--green)}
+.mico.acc{background:#2a200a;border-color:#5a4010}.mico.acc svg{stroke:var(--accent)}
+.mtxt{flex:1;min-width:0}
+.mtitle{font-size:12px;letter-spacing:.05em;font-family:var(--cinzel)}
+.mhint{font-size:11px;color:var(--muted);margin-top:2px;font-family:var(--body)}
+.marr svg{width:14px;height:14px;stroke:var(--muted);stroke-width:1.5;fill:none}
+.mbadge{background:var(--accent);color:var(--bg);font-size:8px;padding:3px 9px;font-weight:700;white-space:nowrap;font-family:var(--cinzel);letter-spacing:.12em}
+.mbadge.grn{background:var(--green);color:#fff}
+
+/* ── ORDERS PAGE ── */
+.orders-page-wrap{padding:0 16px 16px}
+.ocard{background:var(--surface);padding:14px;margin-bottom:10px;border:1px solid var(--border)}
+.ohdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px}
+.onum{font-size:11px;font-weight:600;font-family:var(--cinzel);color:var(--accent);letter-spacing:.12em}
+.odate{font-size:10px;color:var(--muted);font-family:var(--body)}
+.ostatus{font-size:8px;padding:3px 10px;font-weight:600;font-family:var(--cinzel);letter-spacing:.12em;text-transform:uppercase}
+.s-ok{background:#0e2a18;color:var(--green);border:1px solid #1a5a30}
+.s-ship{background:#2a1e08;color:#c8a030;border:1px solid #5a4010}
+.s-proc{background:var(--soft);color:var(--muted);border:1px solid var(--border)}
+.s-cancel{background:#2a0e0e;color:var(--red);border:1px solid #5a1a1a}
+.othumbs{display:flex;gap:5px;margin-bottom:10px}
+.othumb{width:44px;height:54px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid var(--border);overflow:hidden}
+.othumb img{width:100%;height:100%;object-fit:cover}
+.oftr{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:10px}
+.ototal{font-size:14px;font-weight:400;font-family:var(--fell);color:var(--accent);font-style:italic}
+.rebtn{font-size:8px;color:var(--text);font-weight:600;cursor:pointer;border:1px solid var(--border);background:none;padding:5px 12px;font-family:var(--cinzel);letter-spacing:.12em;text-transform:uppercase}
+.oitems-list{font-size:11px;color:var(--muted);font-family:var(--body);margin-bottom:10px;line-height:1.8}
+.oaddr{font-size:10px;color:var(--muted);font-family:var(--body);margin-bottom:10px;padding:8px 10px;background:var(--soft);border-left:2px solid var(--border2)}
+
+/* ── FAVORITES ── */
+.fav-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:55vh;gap:14px;color:var(--muted)}
+
+/* ── MODAL SHEET ── */
+.moverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:300;align-items:flex-end}
+.moverlay.open{display:flex}
+.msheet{background:var(--bg);border-top:1px solid var(--border2);width:100%;padding:16px 16px 32px;animation:sup .25s ease;max-height:93dvh;overflow-y:auto}
+@keyframes sup{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.mhandle{width:36px;height:3px;background:var(--border2);margin:0 auto 18px}
+.mpname{font-size:20px;font-weight:600;margin-bottom:4px;font-family:var(--cinzel);letter-spacing:.06em}
+.mpprice{font-size:26px;font-weight:400;font-family:var(--fell);margin-bottom:4px;color:var(--accent);font-style:italic}
+.mpold{font-size:13px;color:var(--muted);text-decoration:line-through;font-family:var(--body);margin-bottom:14px}
+.slbl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.25em;margin-bottom:8px;font-family:var(--cinzel)}
+.sizes{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.szpill{padding:7px 16px;border:1px solid var(--border);font-size:11px;cursor:pointer;transition:.15s;background:var(--surface);font-family:var(--cinzel);letter-spacing:.1em;text-transform:uppercase}
+.szpill.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.mpbtn{width:100%;background:var(--accent);color:var(--bg);border:none;padding:15px;font-family:var(--cinzel);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.2em;text-transform:uppercase;transition:opacity .15s}
+.mpbtn:active{opacity:.8}
+.mdesc{font-size:13px;color:var(--muted);line-height:1.75;margin-bottom:16px;font-family:var(--body)}
+
+/* ── ADDRESS FORM ── */
+.addr-form-title{font-family:var(--cinzel);font-size:16px;font-weight:600;letter-spacing:.1em;margin-bottom:4px}
+.addr-form-sub{font-size:11px;color:var(--muted);font-family:var(--body);margin-bottom:20px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:8px;color:var(--accent);letter-spacing:.25em;text-transform:uppercase;font-family:var(--cinzel);font-weight:600;display:block;margin-bottom:6px}
+.form-input{width:100%;background:var(--surface);border:1px solid var(--border2);padding:12px 14px;font-family:var(--body);font-size:13px;color:var(--text);outline:none;transition:border-color .15s;-webkit-appearance:none}
+.form-input:focus{border-color:var(--accent)}
+.form-input::placeholder{color:var(--muted)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-save-btn{width:100%;background:var(--accent);color:var(--bg);border:none;padding:14px;font-family:var(--cinzel);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.2em;text-transform:uppercase;margin-top:6px;transition:opacity .15s}
+.form-save-btn:active{opacity:.8}
+.form-note{font-size:10px;color:var(--muted);font-family:var(--body);text-align:center;margin-top:10px;line-height:1.6}
+
+/* ── RECEIPT ── */
+.receipt{background:var(--surface);border:1px solid var(--border2);padding:20px;margin-bottom:16px;font-family:var(--body)}
+.receipt-head{text-align:center;margin-bottom:16px;border-bottom:1px dashed var(--border2);padding-bottom:14px}
+.receipt-logo{font-family:var(--cinzel-dec);font-size:18px;color:var(--accent);line-height:1;margin-bottom:4px;letter-spacing:.1em}
+.receipt-num{font-size:10px;color:var(--muted);letter-spacing:.15em;text-transform:uppercase;font-family:var(--cinzel)}
+.receipt-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:6px;gap:8px}
+.receipt-row .rk{color:var(--muted);flex:1}
+.receipt-row .rv{color:var(--text);text-align:right}
+.receipt-divider{border:none;border-top:1px dashed var(--border);margin:12px 0}
+.receipt-total{display:flex;justify-content:space-between;font-size:16px;font-family:var(--fell);color:var(--accent);font-style:italic}
+.receipt-status{text-align:center;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)}
+.receipt-status .rs-label{font-size:8px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:6px;font-family:var(--cinzel)}
+.receipt-status .rs-val{font-size:11px;color:var(--green);letter-spacing:.08em;font-family:var(--body)}
+
+/* ── MANAGER PANEL ── */
+.mgr-input{background:var(--surface);border:1px solid var(--border2);padding:11px 14px;font-family:var(--body);font-size:13px;color:var(--text);width:100%;outline:none;margin-bottom:8px}
+.mgr-input::placeholder{color:var(--muted)}
+.mgr-select{background:var(--surface);border:1px solid var(--border2);padding:11px 14px;font-family:var(--body);font-size:13px;color:var(--text);width:100%;outline:none;margin-bottom:12px;cursor:pointer;appearance:none;-webkit-appearance:none}
+.mgr-btn{background:var(--accent);color:var(--bg);border:none;padding:12px;font-family:var(--cinzel);font-size:10px;font-weight:700;cursor:pointer;letter-spacing:.2em;text-transform:uppercase;width:100%;transition:opacity .15s}
+.mgr-btn:active{opacity:.8}
+.mgr-result{background:var(--soft);border:1px solid var(--border);padding:12px 14px;font-family:var(--body);font-size:11px;color:var(--text);line-height:1.7;margin-top:12px;display:none}
+.mgr-result.show{display:block}
+
+/* ── SEC TITLE ── */
+.sec-title{font-family:var(--cinzel);font-size:20px;font-weight:600;color:var(--text);line-height:1;letter-spacing:.08em}
+.sec-sub{font-size:9px;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;font-family:var(--cinzel);margin-top:2px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(var(--nav) + 14px);left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface);color:var(--text);border:1px solid var(--border2);padding:10px 20px;font-size:11px;font-weight:500;z-index:400;opacity:0;transition:all .25s;white-space:nowrap;pointer-events:none;font-family:var(--cinzel);letter-spacing:.08em}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- ═══ SHOP PAGE ═══ -->
+<div class="page active" id="pg-shop">
+  <div class="topbar">
+    <div class="logo">NNSTORE</div>
+    <div class="cart-btn" onclick="goPage('cart')">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <div class="cbadge" id="cbadge">0</div>
+    </div>
+  </div>
+  <div class="pad" style="padding-top:16px">
+    <div class="slabel" style="margin-bottom:16px">Коллекция</div>
+    <div class="pgrid" id="pgrid"></div>
+  </div>
+</div>
+
+<!-- ═══ FAVORITES PAGE ═══ -->
+<div class="page" id="pg-favorites">
+  <div class="topbar">
+    <div>
+      <div class="sec-title">Избранное</div>
+      <div class="sec-sub">Сохранённые товары</div>
+    </div>
+  </div>
+  <div class="pad" style="padding-top:16px">
+    <div class="pgrid" id="fav-grid">
+      <div style="grid-column:1/-1">
+        <div class="fav-empty">
+          <div style="font-size:30px;opacity:.15;font-family:var(--cinzel-dec)">✦</div>
+          <div style="font-size:10px;letter-spacing:.2em;font-family:var(--cinzel);text-transform:uppercase;color:var(--muted)">Пока ничего не сохранено</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CART PAGE ═══ -->
+<div class="page" id="pg-cart">
+  <div class="topbar">
+    <div>
+      <div class="sec-title">Корзина</div>
+      <div class="sec-sub" id="clabel">0 товаров</div>
+    </div>
+  </div>
+  <div class="pad" style="padding-top:16px" id="cartcontent">
+    <div class="cempty">
+      <div class="cempty-icon">✦</div>
+      <div class="cempty-txt">Корзина пуста</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ORDERS PAGE ═══ -->
+<div class="page" id="pg-orders">
+  <div class="topbar">
+    <div>
+      <div class="sec-title">Заказы</div>
+      <div class="sec-sub">История покупок</div>
+    </div>
+  </div>
+  <div class="orders-page-wrap" id="orders-page-list">
+    <div style="text-align:center;padding:60px 0;color:var(--muted);font-family:var(--cinzel);font-size:10px;letter-spacing:.15em;text-transform:uppercase">Заказов пока нет</div>
+  </div>
+</div>
+
+<!-- ═══ PROFILE PAGE ═══ -->
+<div class="page" id="pg-profile">
+  <div class="topbar">
+    <div class="logo">NNSTORE</div>
+  </div>
+  <div class="prof-hero">
+    <div class="prof-av" id="prof-av">N</div>
+    <div>
+      <div class="prof-name" id="prof-name">Загрузка...</div>
+      <div class="prof-handle" id="prof-handle"></div>
+      <div class="prof-id" id="prof-id"></div>
+    </div>
+  </div>
+  <div class="pstats">
+    <div class="pstat"><div class="pstat-n" id="orders-count">0</div><div class="pstat-l">Заказов</div></div>
+    <div class="pstat"><div class="pstat-n" id="shipped-count">0</div><div class="pstat-l">Отправлено</div></div>
+    <div class="pstat"><div class="pstat-n" id="received-count">0</div><div class="pstat-l">Получено</div></div>
+  </div>
+
+  <div class="msec">
+    <div class="mlabel">Покупки</div>
+    <div class="mi" onclick="goPage('orders');renderOrdersPage()">
+      <div class="mico acc"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg></div>
+      <div class="mtxt"><div class="mtitle">Мои заказы</div><div class="mhint">История покупок</div></div>
+      <span class="mbadge grn" id="orders-badge">0</span>
+    </div>
+
+    <div class="mi" onclick="openAddressForm()">
+      <div class="mico"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+      <div class="mtxt"><div class="mtitle">Адреса доставки</div><div class="mhint" id="addr-hint">Не указан</div></div>
+      <div class="marr"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+    </div>
+  </div>
+
+  <div class="msec">
+    <div class="mlabel">Поддержка</div>
+    <div class="mi" onclick="openSupport()">
+      <div class="mico grn"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+      <div class="mtxt"><div class="mtitle">Написать в поддержку</div><div class="mhint">Ответим за 5 минут</div></div>
+      <span class="mbadge grn">Online</span>
+    </div>
+    <div class="mi">
+      <div class="mico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div class="mtxt"><div class="mtitle">FAQ</div><div class="mhint">Частые вопросы</div></div>
+      <div class="marr"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+    </div>
+  </div>
+
+  <div class="msec" id="mgr-section" style="display:none">
+    <div class="mlabel">Manager Panel</div>
+    <div class="mi" onclick="openManagerPanel()">
+      <div class="mico red"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+      <div class="mtxt"><div class="mtitle" style="color:var(--accent)">Управление заказами</div><div class="mhint">Изменить статус по ID</div></div>
+      <div class="marr"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+    </div>
+  </div>
+
+  <div class="msec">
+    <div class="mlabel">Аккаунт</div>
+    <div class="mi" onclick="showToast('До свидания ✦')">
+      <div class="mico red"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+      <div class="mtxt"><div class="mtitle" style="color:var(--red)">Выйти</div></div>
+    </div>
+  </div>
+  <div style="height:12px"></div>
+</div>
+
+<!-- ═══ PRODUCT MODAL ═══ -->
+<div class="moverlay" id="mod-product" onclick="closeMod('mod-product')">
+  <div class="msheet" onclick="event.stopPropagation()">
+    <div class="mhandle"></div>
+    <div class="album-wrap" id="mod-album">
+      <div class="album-arr prev" onclick="albumNav(-1)"><svg viewBox="0 0 24 24"><polyline points="15,18 9,12 15,6"/></svg></div>
+      <div class="album-arr next" onclick="albumNav(1)"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+      <div id="album-slides"></div>
+      <div class="album-nav" id="album-dots"></div>
+    </div>
+    <div class="mpname" id="mpname"></div>
+    <div class="mpprice" id="mpprice"></div>
+    <div class="mpold" id="mpold"></div>
+    <div class="mdesc" id="mpdesc"></div>
+    <div class="slbl">Размер</div>
+    <div class="sizes">
+      <div class="szpill" onclick="selSz(this)">XS</div>
+      <div class="szpill on" onclick="selSz(this)">S</div>
+      <div class="szpill" onclick="selSz(this)">M</div>
+      <div class="szpill" onclick="selSz(this)">L</div>
+      <div class="szpill" onclick="selSz(this)">XL</div>
+    </div>
+    <button class="mpbtn" onclick="addFromMod()">Добавить в корзину</button>
+  </div>
+</div>
+
+<!-- ═══ ADDRESS FORM MODAL ═══ -->
+<div class="moverlay" id="mod-address" onclick="closeMod('mod-address')">
+  <div class="msheet" onclick="event.stopPropagation()">
+    <div class="mhandle"></div>
+    <div class="addr-form-title">Адрес доставки</div>
+    <div class="addr-form-sub">Заполните данные для отправки посылки</div>
+
+    <div class="form-group">
+      <label class="form-label">Имя получателя</label>
+      <input class="form-input" id="addr-name" type="text" placeholder="Иван Иванов">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Телефон</label>
+      <input class="form-input" id="addr-phone" type="tel" placeholder="+373 xx xxx xxx">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Страна / Город</label>
+      <div class="form-row">
+        <input class="form-input" id="addr-country" type="text" placeholder="Молдова">
+        <input class="form-input" id="addr-city" type="text" placeholder="Кишинёв">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Улица и номер дома</label>
+      <input class="form-input" id="addr-street" type="text" placeholder="ул. Штефан чел Маре, 1">
+    </div>
+    <div class="form-group">
+      <div class="form-row">
+        <div>
+          <label class="form-label">Квартира / офис</label>
+          <input class="form-input" id="addr-apt" type="text" placeholder="кв. 12">
+        </div>
+        <div>
+          <label class="form-label">Индекс</label>
+          <input class="form-input" id="addr-zip" type="text" placeholder="MD-2001">
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Комментарий (необязательно)</label>
+      <input class="form-input" id="addr-note" type="text" placeholder="Домофон, ориентир...">
+    </div>
+
+    <button class="form-save-btn" onclick="saveAddress()">Сохранить адрес</button>
+    <div class="form-note">Адрес будет автоматически прикреплён к вашему следующему заказу</div>
+  </div>
+</div>
+
+<!-- ═══ RECEIPT MODAL ═══ -->
+<div class="moverlay" id="mod-receipt" onclick="closeMod('mod-receipt')">
+  <div class="msheet" onclick="event.stopPropagation()">
+    <div class="mhandle"></div>
+    <div id="receipt-content"></div>
+    <button class="mpbtn" onclick="closeMod('mod-receipt')">Закрыть</button>
+  </div>
+</div>
+
+<!-- ═══ MANAGER PANEL MODAL ═══ -->
+<div class="moverlay" id="mod-manager" onclick="closeMod('mod-manager')">
+  <div class="msheet" onclick="event.stopPropagation()">
+    <div class="mhandle"></div>
+    <div class="sec-title" style="margin-bottom:4px">Manager Panel</div>
+    <div class="sec-sub" style="margin-bottom:20px">Изменение статуса заказа</div>
+    <div class="slbl" style="margin-bottom:6px">ID заказа (пример: #4021)</div>
+    <input class="mgr-input" id="mgr-order-id" placeholder="#0000" oninput="mgrSearch()">
+    <div id="mgr-found" style="display:none">
+      <div class="slbl" style="margin-bottom:4px">Текущий статус</div>
+      <div id="mgr-current-status" style="font-family:var(--body);font-size:12px;color:var(--accent);margin-bottom:10px"></div>
+      <div id="mgr-order-details"></div>
+      <div class="slbl" style="margin-bottom:6px">Новый статус</div>
+      <select class="mgr-select" id="mgr-new-status">
+        <option value="s-proc">🕐 В обработке</option>
+        <option value="s-ship">🚚 В пути</option>
+        <option value="s-ok">✅ Доставлен</option>
+        <option value="s-cancel">❌ Отменён</option>
+      </select>
+      <button class="mgr-btn" onclick="mgrUpdateStatus()">Обновить статус</button>
+    </div>
+    <div id="mgr-notfound" style="display:none;font-family:var(--body);font-size:12px;color:var(--red);margin-top:8px">Заказ не найден</div>
+    <div class="mgr-result" id="mgr-result"></div>
+  </div>
+</div>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <button class="nb active" id="nav-shop" onclick="goPage('shop')">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+    <span>Магазин</span>
+  </button>
+  <button class="nb" id="nav-orders" onclick="goPage('orders');renderOrdersPage()">
+    <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
+    <span>Заказы</span>
+  </button>
+  <button class="nb" id="nav-cart" onclick="goPage('cart')">
+    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+    <span>Корзина</span>
+  </button>
+  <button class="nb" id="nav-profile" onclick="goPage('profile')">
+    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Профиль</span>
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if(tg){ tg.ready(); tg.expand(); tg.setHeaderColor?.('#080808'); }
+
+const BOT = '8783279816:AAGAkXhP51Ev1ht96O2knXwYHLYdiB-jZUo';
+const MANAGER_ID = '8277601735';
+const MANAGER_USERNAME = 'nnmanagerr';
+
+const STATUS_MAP = {
+  's-proc':  { label:'В обработке' },
+  's-ship':  { label:'В пути'      },
+  's-ok':    { label:'Доставлен'   },
+  's-cancel':{ label:'Отменён'     },
+};
+
+// ── PRODUCTS ──
+const PRODUCTS = [
+  { id:1, name:'Linen Tee',      price:890,  cat:'tshirt', badge:'new',
+    desc:'Льняная футболка оверсайз с необработанными краями. Авангардный крой.',
+    photos:['👕','🧵','✂️'] },
+  { id:2, name:'Wide Pants',     price:1790, old:2490, cat:'pants', badge:'sale',
+    desc:'Широкие брюки из тяжёлого габардина. Конструктивистский силуэт.',
+    photos:['👖','🖤','⬛'] },
+  { id:3, name:'Bomber',         price:3200, cat:'jacket', badge:'new',
+    desc:'Бомбер из матовой ткани с готическими нашивками. Ограниченная серия.',
+    photos:['🧥','⚜️','🖤'] },
+  { id:4, name:'White Sneakers', price:2300, cat:'shoes',
+    desc:'Кожаные кеды с необработанной подошвой. Минималистичный силуэт.',
+    photos:['👟','🤍','✦'] },
+  { id:5, name:'Linen Shirt',    price:1250, cat:'tshirt',
+    desc:'Рубашка из натурального льна. Деконструированный воротник.',
+    photos:['👔','🌿','✠'] },
+  { id:6, name:'Cap',            price:690,  old:890, cat:'acc', badge:'sale',
+    desc:'Кепка с готическим принтом. Структурированный козырёк.',
+    photos:['🧢','⚡','✦'] },
+  { id:7, name:'Cargo Pants',    price:2100, cat:'pants',
+    desc:'Карго-брюки с функциональными карманами. Тяжёлый хлопок.',
+    photos:['🩳','⬛','🔩'] },
+  { id:8, name:'Parka',          price:4200, cat:'jacket', badge:'new',
+    desc:'Парка с асимметричным кроем и скрытой молнией. Водоотталкивающая.',
+    photos:['🥼','🌑','✠'] },
+];
+
+let cart = {}, favs = new Set(), curProd = null, curAlbumIdx = 0;
+let myOrders = [];
+let savedAddress = null;
+
+// ── PROFILE ──
+function initProfile() {
+  const user = tg?.initDataUnsafe?.user;
+  const avEl = document.getElementById('prof-av');
+  if (user) {
+    const full = [user.first_name, user.last_name].filter(Boolean).join(' ');
+    document.getElementById('prof-name').textContent = full || 'Пользователь';
+    document.getElementById('prof-handle').textContent = user.username ? '@' + user.username : '';
+    document.getElementById('prof-id').textContent = 'ID: ' + user.id;
+    avEl.textContent = (user.first_name?.[0] || 'N').toUpperCase();
+    if (user.photo_url) {
+      const img = new Image();
+      img.onload = () => { avEl.innerHTML=''; avEl.appendChild(img); img.style.cssText='width:100%;height:100%;object-fit:cover'; };
+      img.src = user.photo_url;
+    }
+    if (user.username === MANAGER_USERNAME) {
+      document.getElementById('mgr-section').style.display = 'block';
+    }
+  } else {
+    document.getElementById('prof-name').textContent = 'Гость';
+    document.getElementById('prof-handle').textContent = 'Откройте в Telegram';
+    document.getElementById('prof-id').textContent = 'ID: —';
+    avEl.textContent = 'N';
+    // Preview: show manager panel
+    document.getElementById('mgr-section').style.display = 'block';
+  }
+}
+
+// ── ADDRESS ──
+function openAddressForm() {
+  if (savedAddress) {
+    document.getElementById('addr-name').value    = savedAddress.name    || '';
+    document.getElementById('addr-phone').value   = savedAddress.phone   || '';
+    document.getElementById('addr-country').value = savedAddress.country || '';
+    document.getElementById('addr-city').value    = savedAddress.city    || '';
+    document.getElementById('addr-street').value  = savedAddress.street  || '';
+    document.getElementById('addr-apt').value     = savedAddress.apt     || '';
+    document.getElementById('addr-zip').value     = savedAddress.zip     || '';
+    document.getElementById('addr-note').value    = savedAddress.note    || '';
+  }
+  document.getElementById('mod-address').classList.add('open');
+}
+
+function saveAddress() {
+  const name    = document.getElementById('addr-name').value.trim();
+  const phone   = document.getElementById('addr-phone').value.trim();
+  const country = document.getElementById('addr-country').value.trim();
+  const city    = document.getElementById('addr-city').value.trim();
+  const street  = document.getElementById('addr-street').value.trim();
+  const apt     = document.getElementById('addr-apt').value.trim();
+  const zip     = document.getElementById('addr-zip').value.trim();
+  const note    = document.getElementById('addr-note').value.trim();
+
+  if (!name || !phone || !city || !street) {
+    showToast('Заполните обязательные поля');
+    return;
+  }
+
+  savedAddress = { name, phone, country, city, street, apt, zip, note };
+  const shortAddr = [street, apt ? 'кв.'+apt : '', city].filter(Boolean).join(', ');
+  document.getElementById('addr-hint').textContent = shortAddr;
+  closeMod('mod-address');
+  showToast('Адрес сохранён ✦');
+}
+
+function formatAddress(a) {
+  if (!a) return 'Не указан';
+  return [
+    a.name, a.phone,
+    [a.country, a.city].filter(Boolean).join(', '),
+    [a.street, a.apt ? 'кв./офис ' + a.apt : '', a.zip].filter(Boolean).join(', '),
+    a.note ? 'Комм.: ' + a.note : ''
+  ].filter(Boolean).join('\n');
+}
+
+// ── PRODUCTS ──
+function renderProducts() {
+  const grid = document.getElementById('pgrid');
+  grid.innerHTML = PRODUCTS.map(p => cardHTML(p)).join('');
+}
+
+function cardHTML(p) {
+  const badgeHtml = p.badge ? `<span class="pbadge b-${p.badge}">${p.badge==='new'?'NEW':'SALE'}</span>` : '';
+  const oldHtml   = p.old   ? `<span class="pold">${p.old.toLocaleString('ru')} MDL</span>` : '';
+  return `<div class="pcard" onclick="openProd(${p.id})">
+    <div class="pimg"><span class="pimg-em">${p.photos[0]}</span>${badgeHtml}</div>
+    <div class="pinfo">
+      <div class="pname">${p.name}</div>
+      <div class="prow">
+        <div><span class="pprice">${p.price.toLocaleString('ru')} MDL</span>${oldHtml}</div>
+        <button class="addbtn" onclick="event.stopPropagation();quickAdd(${p.id})">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── ALBUM ──
+function buildAlbum(photos) {
+  curAlbumIdx = 0;
+  document.getElementById('album-slides').innerHTML = photos.map((ph, i) => `
+    <div class="album-slide ${i===0?'active':''}" data-idx="${i}">
+      ${ph.startsWith('http') ? `<img src="${ph}" alt="">` : `<span style="font-size:72px;opacity:.4">${ph}</span>`}
+    </div>`).join('');
+  document.getElementById('album-dots').innerHTML = photos.map((_,i) =>
+    `<div class="adot ${i===0?'active':''}" onclick="albumGo(${i})"></div>`).join('');
+}
+
+function albumNav(dir) {
+  if (!curProd) return;
+  albumGo((curAlbumIdx + dir + curProd.photos.length) % curProd.photos.length);
+}
+
+function albumGo(idx) {
+  document.querySelectorAll('.album-slide').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.adot').forEach(d => d.classList.remove('active'));
+  document.querySelectorAll('.album-slide')[idx]?.classList.add('active');
+  document.querySelectorAll('.adot')[idx]?.classList.add('active');
+  curAlbumIdx = idx;
+}
+
+// ── PRODUCT MODAL ──
+function openProd(id) {
+  curProd = PRODUCTS.find(p => p.id === id);
+  buildAlbum(curProd.photos);
+  document.getElementById('mpname').textContent = curProd.name;
+  document.getElementById('mpprice').textContent = curProd.price.toLocaleString('ru') + ' MDL';
+  document.getElementById('mpold').textContent = curProd.old ? curProd.old.toLocaleString('ru') + ' MDL' : '';
+  document.getElementById('mpdesc').textContent = curProd.desc || '';
+  document.querySelectorAll('.szpill').forEach((p,i) => p.classList.toggle('on', i===1));
+  document.getElementById('mod-product').classList.add('open');
+}
+
+function selSz(el) {
+  document.querySelectorAll('.szpill').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function addFromMod() {
+  if (!curProd) return;
+  addToCart(curProd, document.querySelector('.szpill.on')?.textContent || 'M');
+  closeMod('mod-product');
+  showToast(curProd.name + ' добавлен в корзину');
+}
+
+function quickAdd(id) {
+  const p = PRODUCTS.find(x => x.id === id);
+  addToCart(p, 'M');
+  showToast(p.name + ' добавлен');
+}
+
+// ── CART ──
+function addToCart(p, sz) {
+  const k = p.id + '_' + sz;
+  if (!cart[k]) cart[k] = {...p, sz, qty:0};
+  cart[k].qty++;
+  updateCart();
+}
+
+function updateCart() {
+  const items = Object.values(cart).filter(i => i.qty > 0);
+  const total = items.reduce((s,i) => s + i.qty, 0);
+  const badge = document.getElementById('cbadge');
+  badge.textContent = total;
+  badge.classList.toggle('show', total > 0);
+  const lbl = total===1?'товар':total<5?'товара':'товаров';
+  document.getElementById('clabel').textContent = total + ' ' + lbl;
+  renderCart();
+}
+
+function renderCart() {
+  const items = Object.values(cart).filter(i => i.qty > 0);
+  const el = document.getElementById('cartcontent');
+  if (!items.length) {
+    el.innerHTML = '<div class="cempty"><div class="cempty-icon">✦</div><div class="cempty-txt">Корзина пуста</div></div>';
+    return;
+  }
+  const sub = items.reduce((s,i) => s + i.qty * i.price, 0);
+  const del = sub > 2000 ? 0 : 150;
+
+  const addrBlock = savedAddress
+    ? `<div class="addr-banner" onclick="openAddressForm()">
+        <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <div class="addr-banner-txt">
+          <div class="addr-banner-label">Адрес доставки</div>
+          <div class="addr-banner-val">${savedAddress.street}${savedAddress.apt?', кв.'+savedAddress.apt:''}, ${savedAddress.city}</div>
+        </div>
+        <div class="addr-banner-arr"><svg viewBox="0 0 24 24"><polyline points="9,18 15,12 9,6"/></svg></div>
+      </div>`
+    : `<div class="addr-banner" onclick="openAddressForm()" style="border-color:var(--accent2)">
+        <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <div class="addr-banner-txt">
+          <div class="addr-banner-label" style="color:var(--red)">Адрес не указан</div>
+          <div class="addr-banner-val" style="color:var(--muted)">Нажмите, чтобы добавить →</div>
+        </div>
+      </div>`;
+
+  el.innerHTML = items.map(i => `
+    <div class="citem">
+      <div class="cithumb"><span style="font-size:24px">${i.photos[0]}</span></div>
+      <div class="ciinfo">
+        <div class="ciname">${i.name}</div>
+        <div class="cisize">Размер: ${i.sz}</div>
+        <div class="cibot">
+          <div class="ciprice">${(i.price*i.qty).toLocaleString('ru')} MDL</div>
+          <div class="qty">
+            <button class="qtybtn" onclick="chgQty('${i.id}_${i.sz}',-1)">−</button>
+            <span class="qtynum">${i.qty}</span>
+            <button class="qtybtn" onclick="chgQty('${i.id}_${i.sz}',1)">+</button>
+          </div>
+        </div>
+      </div>
+    </div>`).join('') + `
+  <div class="csum">
+    ${addrBlock}
+    <div class="srow"><span>Товары</span><span>${sub.toLocaleString('ru')} MDL</span></div>
+    <div class="srow"><span>Доставка</span><span>${del===0?'Бесплатно':del+' MDL'}</span></div>
+    <div class="srow tot"><span>Итого</span><span>${(sub+del).toLocaleString('ru')} MDL</span></div>
+    <button class="cobtn" onclick="checkout()">Оформить заказ</button>
+  </div>`;
+}
+
+function chgQty(k, d) {
+  if (!cart[k]) return;
+  cart[k].qty = Math.max(0, cart[k].qty + d);
+  if (!cart[k].qty) delete cart[k];
+  updateCart();
+}
+
+// ── CHECKOUT ──
+async function checkout() {
+  const items = Object.values(cart).filter(i => i.qty > 0);
+  if (!items.length) return;
+
+  const user = tg?.initDataUnsafe?.user;
+  const uname = user
+    ? `${user.first_name||''} ${user.last_name||''}`.trim() + (user.username?' (@'+user.username+')':'')
+    : 'Гость';
+  const uid = user?.id || '—';
+
+  const sub   = items.reduce((s,i) => s + i.qty * i.price, 0);
+  const del   = sub > 2000 ? 0 : 150;
+  const total = sub + del;
+  const num   = '#' + Math.floor(1000 + Math.random()*9000);
+  const dateStr = new Date().toLocaleDateString('ru',{day:'numeric',month:'short'});
+
+  const addrFmt = formatAddress(savedAddress);
+
+  // Сохранить заказ локально и в базе
+  const order = { num, date:dateStr, status:'s-proc', items:items.map(i=>({...i})), sub, del, total, uid, uname, address:savedAddress, ts:Date.now() };
+  myOrders.unshift(order);
+  await dbSaveOrder(order);
+  updateOrdersBadge();
+
+  // Текст для менеджера
+  const lines = items.map(i => `  ${i.photos[0]} ${i.name} (${i.sz}) ×${i.qty} — ${(i.price*i.qty).toLocaleString('ru')} MDL`).join('\n');
+  const addrBlock = savedAddress
+    ? `\n\n📍 <b>Адрес доставки:</b>\n  👤 ${savedAddress.name}\n  📞 ${savedAddress.phone}\n  🏙 ${[savedAddress.country,savedAddress.city].filter(Boolean).join(', ')}\n  🏠 ${savedAddress.street}${savedAddress.apt?', кв.'+savedAddress.apt:''}${savedAddress.zip?', '+savedAddress.zip:''}\n${savedAddress.note?'  💬 '+savedAddress.note:''}`
+    : '\n\n📍 Адрес доставки: не указан';
+
+  const mgrText = `🛍 <b>Новый заказ ${num}</b>\n\n👤 ${uname}\n🆔 ID: ${uid}\n\n📦 Товары:\n${lines}\n\n📬 Доставка: ${del===0?'Бесплатно':del+' MDL'}\n💰 <b>Итого: ${total.toLocaleString('ru')} MDL</b>${addrBlock}`;
+
+  // Чек для покупателя
+  const receiptText = `🧾 <b>Чек заказа ${num}</b>\n\n`
+    + items.map(i=>`• ${i.name} (${i.sz}) ×${i.qty} — ${(i.price*i.qty).toLocaleString('ru')} MDL`).join('\n')
+    + `\n\n📬 Доставка: ${del===0?'Бесплатно':del+' MDL'}\n`
+    + `💰 <b>Итого: ${total.toLocaleString('ru')} MDL</b>\n\n`
+    + `✅ Статус: В обработке\n📅 ${dateStr}`;
+
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT}/sendMessage`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id:MANAGER_ID, text:mgrText, parse_mode:'HTML' })
+    });
+    if (uid && uid !== '—') {
+      await fetch(`https://api.telegram.org/bot${BOT}/sendMessage`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ chat_id:uid, text:receiptText, parse_mode:'HTML' })
+      });
+    }
+  } catch(e) {}
+
+  cart = {};
+  updateCart();
+  showReceipt(order);
+}
+
+// ── RECEIPT ──
+function showReceipt(order) {
+  const itemsHTML = order.items.map(i =>
+    `<div class="receipt-row"><span class="rk">${i.photos[0]} ${i.name} (${i.sz}) ×${i.qty}</span><span class="rv">${(i.price*i.qty).toLocaleString('ru')} MDL</span></div>`
+  ).join('');
+
+  const addrHTML = order.address
+    ? `<hr class="receipt-divider">
+       <div class="receipt-row"><span class="rk">Получатель</span><span class="rv">${order.address.name}</span></div>
+       <div class="receipt-row"><span class="rk">Телефон</span><span class="rv">${order.address.phone}</span></div>
+       <div class="receipt-row"><span class="rk">Адрес</span><span class="rv" style="text-align:right;max-width:180px">${order.address.street}${order.address.apt?', кв.'+order.address.apt:''}<br>${order.address.city}${order.address.zip?', '+order.address.zip:''}</span></div>`
+    : '';
+
+  document.getElementById('receipt-content').innerHTML = `
+    <div class="receipt">
+      <div class="receipt-head">
+        <div class="receipt-logo">NNSTORE</div>
+        <div class="receipt-num">Заказ ${order.num} · ${order.date}</div>
+      </div>
+      ${itemsHTML}
+      <hr class="receipt-divider">
+      <div class="receipt-row"><span class="rk">Доставка</span><span class="rv">${order.del===0?'Бесплатно':order.del+' MDL'}</span></div>
+      <hr class="receipt-divider">
+      <div class="receipt-total"><span>Итого</span><span>${order.total.toLocaleString('ru')} MDL</span></div>
+      ${addrHTML}
+      <div class="receipt-status">
+        <div class="rs-label">Статус</div>
+        <div class="rs-val">✅ Принят в обработку</div>
+      </div>
+    </div>`;
+  document.getElementById('mod-receipt').classList.add('open');
+}
+
+// ── ORDERS PAGE ──
+function updateOrdersBadge() {
+  const cnt = myOrders.length;
+  document.getElementById('orders-count').textContent = cnt;
+  document.getElementById('orders-badge').textContent = cnt;
+  updateShippedReceived();
+}
+
+function updateShippedReceived() {
+  const shipped = myOrders.filter(o => o.status === 's-ship').length;
+  const received = myOrders.filter(o => o.status === 's-ok').length;
+  document.getElementById('shipped-count').textContent = shipped;
+  document.getElementById('received-count').textContent = received;
+  const spent = myOrders.reduce((s,o) => s + o.total, 0);
+  // kept for any legacy usage
+}
+
+function renderOrdersPage() {
+  const el = document.getElementById('orders-page-list');
+  if (!myOrders.length) {
+    el.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--muted);font-family:var(--cinzel);font-size:10px;letter-spacing:.15em;text-transform:uppercase">Заказов пока нет</div>';
+    return;
+  }
+  el.innerHTML = myOrders.map(o => {
+    const st = STATUS_MAP[o.status] || STATUS_MAP['s-proc'];
+    const thumbs = o.items.map(i => `<div class="othumb">${i.photos[0]}</div>`).join('');
+    const itemLines = o.items.map(i => `${i.photos[0]} ${i.name} (${i.sz}) ×${i.qty}`).join(' · ');
+    const addrLine = o.address ? `<div class="oaddr">📍 ${o.address.street}${o.address.apt?', кв.'+o.address.apt:''}, ${o.address.city}</div>` : '';
+    return `<div class="ocard" id="ocard-${o.num.replace('#','')}">
+      <div class="ohdr">
+        <span class="onum">${o.num}</span>
+        <span class="odate">${o.date}</span>
+        <span class="ostatus ${o.status}">${st.label}</span>
+      </div>
+      <div class="othumbs">${thumbs}</div>
+      <div class="oitems-list">${itemLines}</div>
+      ${addrLine}
+      <div class="oftr">
+        <span class="ototal">${o.total.toLocaleString('ru')} MDL</span>
+        <button class="rebtn" onclick="showReceipt(myOrders.find(x=>x.num==='${o.num}'))">Чек</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── ORDERS DB ──
+// Strategy: каждый заказ сохраняется в localStorage + отправляется боту
+// как скрытое JSON-сообщение. Менеджер ищет заказ через getUpdates,
+// который возвращает историю сообщений бота.
+
+// localStorage: быстрое чтение на том же устройстве
+function dbSaveLocal(order) {
+  try {
+    const all = JSON.parse(localStorage.getItem('nnstore_db') || '{}');
+    all[order.num.replace('#','')] = order;
+    localStorage.setItem('nnstore_db', JSON.stringify(all));
+  } catch(e) {}
+}
+
+function dbGetOrderLocal(num) {
+  try {
+    const all = JSON.parse(localStorage.getItem('nnstore_db') || '{}');
+    return all[num.replace('#','')] || null;
+  } catch(e) { return null; }
+}
+
+// Сохранить статус обратно в localStorage
+function dbSaveStatus(num, newStatus) {
+  try {
+    const all = JSON.parse(localStorage.getItem('nnstore_db') || '{}');
+    const key = num.replace('#','');
+    if (all[key]) { all[key].status = newStatus; localStorage.setItem('nnstore_db', JSON.stringify(all)); }
+  } catch(e) {}
+}
+
+// Сохраняем заказ: localStorage + отправка боту в менеджерский чат как JSON-запись
+async function dbSaveOrder(order) {
+  dbSaveLocal(order);
+  // Отправляем компактную JSON-запись боту — она будет доступна через getUpdates
+  const tag = `[NNSTORE_ORDER] ${JSON.stringify({
+    num: order.num,
+    date: order.date,
+    status: order.status,
+    uname: order.uname,
+    uid: order.uid,
+    total: order.total,
+    items: order.items.map(i => `${i.name}(${i.sz})x${i.qty}`)
+  })}`;
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT}/sendMessage`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id: MANAGER_ID, text: tag })
+    });
+  } catch(e) {}
+}
+
+// Ищем заказ через getUpdates — получаем историю сообщений из чата с ботом
+async function dbGetOrderFromBot(num, callback) {
+  const numClean = num.replace('#','');
+  try {
+    // Используем getUpdates с offset=-1000 чтобы получить последние сообщения
+    const res = await fetch(`https://api.telegram.org/bot${BOT}/getUpdates?limit=100&allowed_updates=["message"]`);
+    const data = await res.json();
+    if (!data.ok) { callback(null); return; }
+    for (const upd of (data.result || []).reverse()) {
+      const txt = upd.message?.text || '';
+      if (txt.startsWith('[NNSTORE_ORDER]')) {
+        try {
+          const json = JSON.parse(txt.replace('[NNSTORE_ORDER] ',''));
+          if (json.num && json.num.replace('#','') === numClean) {
+            callback(json); return;
+          }
+        } catch(e) {}
+      }
+    }
+    callback(null);
+  } catch(e) { callback(null); }
+}
+
+function dbUpdateOrderStatus(num, newStatus, callback) {
+  const numClean = num.replace('#','');
+  // Обновляем в localStorage
+  dbSaveStatus(numClean, newStatus);
+  // Синхронизируем локальный список
+  const local = myOrders.find(o => o.num.replace('#','') === numClean);
+  if (local) local.status = newStatus;
+
+  // Проверяем локальный кэш
+  let order = dbGetOrderLocal(numClean);
+  if (order) {
+    order.status = newStatus;
+    if (callback) callback(order);
+    return;
+  }
+  // Ищем через бот
+  dbGetOrderFromBot(numClean, (order) => {
+    if (order) { order.status = newStatus; dbSaveLocal(order); }
+    if (callback) callback(order);
+  });
+}
+
+function dbLoad() {}
+
+// ── MANAGER PANEL ──
+function openManagerPanel() {
+  document.getElementById('mgr-order-id').value = '';
+  document.getElementById('mgr-found').style.display = 'none';
+  document.getElementById('mgr-notfound').style.display = 'none';
+  document.getElementById('mgr-result').classList.remove('show');
+  document.getElementById('mod-manager').classList.add('open');
+}
+
+function mgrShowOrder(order) {
+  const foundEl = document.getElementById('mgr-found');
+  const notEl   = document.getElementById('mgr-notfound');
+  if (!order) {
+    foundEl.style.display = 'none';
+    notEl.style.display = 'block';
+    return;
+  }
+  const st = STATUS_MAP[order.status] || STATUS_MAP['s-proc'];
+  document.getElementById('mgr-current-status').innerHTML =
+    `<span class="ostatus ${order.status}" style="display:inline-block;margin-right:8px">${st.label}</span><span style="color:var(--muted);font-size:11px">${order.num} · ${order.date||''}</span>`;
+  document.getElementById('mgr-new-status').value = order.status;
+  const items = (order.items||[]).map(i=>`${i.photos?.[0]||''} ${i.name} (${i.sz}) ×${i.qty}`).join(', ');
+  document.getElementById('mgr-order-details').innerHTML =
+    `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.7;font-family:var(--body)">
+      <b style="color:var(--text)">Покупатель:</b> ${order.uname||'—'}<br>
+      <b style="color:var(--text)">Товары:</b> ${items}<br>
+      <b style="color:var(--text)">Сумма:</b> <span style="color:var(--accent)">${(order.total||0).toLocaleString('ru')} MDL</span>
+    </div>`;
+  foundEl.style.display = 'block';
+  notEl.style.display = 'none';
+}
+
+function mgrSearch() {
+  const raw = document.getElementById('mgr-order-id').value.trim();
+  if (!raw || raw.length < 2) {
+    document.getElementById('mgr-found').style.display = 'none';
+    document.getElementById('mgr-notfound').style.display = 'none';
+    return;
+  }
+  const numClean = raw.replace('#','');
+  document.getElementById('mgr-result').classList.remove('show');
+
+  // 1. Текущая сессия
+  const sessionOrder = myOrders.find(o => o.num.replace('#','') === numClean);
+  if (sessionOrder) { mgrShowOrder(sessionOrder); return; }
+
+  // 2. localStorage — заказы с этого устройства
+  const localOrder = dbGetOrderLocal(numClean);
+  if (localOrder) { mgrShowOrder(localOrder); return; }
+
+  // 3. Ищем через getUpdates бота
+  document.getElementById('mgr-notfound').style.display = 'none';
+  document.getElementById('mgr-found').style.display = 'none';
+  const notEl = document.getElementById('mgr-notfound');
+  notEl.textContent = '⏳ Поиск...';
+  notEl.style.display = 'block';
+  notEl.style.color = 'var(--muted)';
+
+  dbGetOrderFromBot(numClean, (botOrder) => {
+    notEl.textContent = 'Заказ не найден';
+    notEl.style.color = 'var(--red)';
+    mgrShowOrder(botOrder);
+  });
+}
+
+function mgrUpdateStatus() {
+  const raw = document.getElementById('mgr-order-id').value.trim();
+  const numClean = raw.replace('#','');
+  const newStatus = document.getElementById('mgr-new-status').value;
+  const st = STATUS_MAP[newStatus];
+
+  dbUpdateOrderStatus(numClean, newStatus, async (order) => {
+    if (!order) { showToast('Заказ не найден'); return; }
+    if (order.uid && order.uid !== '—') {
+      try {
+        await fetch(`https://api.telegram.org/bot${BOT}/sendMessage`,{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ chat_id:order.uid, text:`📦 <b>Статус заказа ${order.num} обновлён</b>\n\nНовый статус: ${st.label}`, parse_mode:'HTML' })
+        });
+      } catch(e){}
+    }
+    const resultEl = document.getElementById('mgr-result');
+    resultEl.innerHTML = `✓ Заказ ${order.num} → <span style="color:var(--accent)">${st.label}</span><br><span style="font-size:10px;color:var(--muted)">Покупатель уведомлён по Telegram.</span>`;
+    resultEl.classList.add('show');
+    document.getElementById('mgr-current-status').innerHTML =
+      `<span class="ostatus ${newStatus}" style="display:inline-block;margin-right:8px">${st.label}</span><span style="color:var(--muted);font-size:11px">${order.num}</span>`;
+    renderOrdersPage();
+    updateShippedReceived();
+  });
+}
+
+// ── NAVIGATION ──
+function goPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('active'));
+  document.getElementById('pg-'+name).classList.add('active');
+  const nb = document.getElementById('nav-'+name);
+  if(nb) nb.classList.add('active');
+  if(name==='orders') renderOrdersPage();
+}
+
+// ── FAVORITES ──
+function renderFavs() {
+  const grid = document.getElementById('fav-grid');
+  if (!grid) return;
+  if (!favs.size) {
+    grid.innerHTML = '<div style="grid-column:1/-1"><div class="fav-empty"><div style="font-size:30px;opacity:.15;font-family:var(--cinzel-dec)">✦</div><div style="font-size:10px;letter-spacing:.2em;font-family:var(--cinzel);text-transform:uppercase;color:var(--muted)">Пока ничего не сохранено</div></div></div>';
+    return;
+  }
+  grid.innerHTML = PRODUCTS.filter(p => favs.has(p.id)).map(p => cardHTML(p)).join('');
+}
+
+function openSupport() {
+  if(tg) tg.openTelegramLink('https://t.me/nnmanagerr');
+  else showToast('Открываем поддержку...');
+}
+
+function closeMod(id) { document.getElementById(id).classList.remove('open'); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+// ── INIT ──
+(function(){
+  dbLoad();
+  initProfile();
+  renderProducts();
+  updateCart();
+  updateOrdersBadge();
+})();
+</script>
+</body>
+</html>
